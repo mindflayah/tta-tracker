@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#101317">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TtA Tracker">
+<meta name="description" content="Tracks culture, science and military for Through the Ages on a tablet or phone in the middle of the table.">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Through the Ages Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus+SC&family=Barlow+Semi+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: a flat table-top. Player boards fill the near and far halves, each facing its owner's seat; one age and round strip runs between them. */
+:root{
+  --bg:#101317;
+  --board:#191d23;
+  --board-2:#222831;
+  --line:#2d343e;
+  --fg:#ece7dc;
+  --muted:#8f97a2;
+  --culture:#e5a53b;
+  --science:#56a9e6;
+  --military:#dd5c4e;
+  --ink:#101215;
+  --grid:#2a3039;
+  --band:#1e232a;
+  --f-display:"Marcellus SC","Trajan Pro","Palatino Linotype",Georgia,serif;
+  --f-num:"Barlow Semi Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;
+  --f-ui:"Barlow",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{height:100%;box-sizing:border-box}
+body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-ui);font-size:15px;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+button:focus-visible,input:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+button:disabled{opacity:.35;cursor:default}
+input{-webkit-user-select:text;user-select:text}
+#app{height:100%;padding-inline:16px;padding-block:12px}
+
+/* ---------- Setup ---------- */
+#setup{height:100%;overflow:auto}
+.setup-wrap{max-width:640px;margin:0 auto;padding-block:24px 40px;display:flex;flex-direction:column;gap:28px}
+.eyebrow{margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.eyebrow span:nth-child(1){color:var(--culture)}
+.eyebrow span:nth-child(2){color:var(--science)}
+.eyebrow span:nth-child(3){color:var(--military)}
+.setup-head h1{font-family:var(--f-display);font-weight:400;font-size:clamp(30px,5vw,46px);line-height:1.05;margin:0;text-wrap:balance}
+.lede{margin:10px 0 0;color:var(--muted);max-width:60ch;line-height:1.5}
+.setup-form{display:flex;flex-direction:column;gap:18px;min-width:0}
+.flabel{font-family:var(--f-display);font-size:15px;letter-spacing:.06em;color:var(--muted)}
+.field{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;background:transparent;min-width:52px;height:42px;font-family:var(--f-num);font-weight:600;font-size:19px}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed="true"]{background:var(--fg);color:var(--ink)}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;grid-template-areas:"num name seat mv" "num sw seat mv";gap:8px 12px;align-items:center;padding:12px 14px;background:var(--board);border:1px solid var(--line);border-radius:12px;border-left:6px solid var(--pc)}
+.pnum{grid-area:num;font-family:var(--f-num);font-weight:700;font-size:24px;width:30px;text-align:center;color:var(--pc)}
+.pin{grid-area:name;width:100%;min-width:0;height:40px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:500 17px var(--f-ui)}
+.swatches{grid-area:sw;display:flex;gap:8px;flex-wrap:wrap}
+.swb{width:30px;height:30px;border-radius:50%;border:2px solid transparent;background:var(--sw);padding:0;box-shadow:inset 0 0 0 2px var(--board)}
+.swb[aria-checked="true"]{border-color:var(--fg)}
+.seatcol{grid-area:seat;display:flex;flex-direction:column;align-items:center;gap:4px}
+.slbl{font-family:var(--f-display);font-size:11px;letter-spacing:.08em;color:var(--muted)}
+.seatpick{display:grid;grid-template-columns:repeat(2,34px);grid-template-rows:20px 18px 20px;gap:4px;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:var(--bg)}
+.seatpick .mt{grid-column:1 / -1;border-radius:4px;background:var(--board-2);border:1px solid var(--line)}
+.sp{border-radius:6px;border:1px solid var(--line);background:transparent;padding:0}
+.sp.taken{background:color-mix(in srgb,var(--oc) 30%,transparent);border-color:color-mix(in srgb,var(--oc) 45%,transparent)}
+.sp[aria-checked="true"]{background:var(--pc);border-color:var(--pc)}
+@media (max-width:460px){.prow{grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"num name mv" "num sw mv" "num seat mv"}.seatcol{flex-direction:row;align-items:center;justify-self:start;gap:10px}}
+.mv{grid-area:mv;display:flex}
+.firstb{height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:transparent;color:var(--muted);font-weight:600;font-size:14px}
+.firstb[aria-checked="true"]{background:var(--fg);color:var(--ink);border-color:var(--fg)}
+.note{margin:0;color:var(--muted);line-height:1.5;max-width:60ch}
+.start{align-self:flex-start;height:52px;padding:0 28px;border-radius:12px;border:0;background:var(--fg);color:var(--ink);font:600 18px var(--f-ui)}
+
+/* ---------- Board ---------- */
+#board{height:100%;display:grid;grid-template-rows:minmax(0,1fr) auto minmax(0,1fr);gap:10px}
+#board.no-far{grid-template-rows:auto minmax(0,1fr)}
+#board.no-near{grid-template-rows:minmax(0,1fr) auto}
+.row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px;min-height:0}
+.row.far .pb{transform:rotate(180deg)}
+
+.strip{display:flex}
+/* middle bar: age track left, round in the middle, buttons right.
+   Undo/redo messages use the free space between the round and the buttons. */
+.bar{flex:1;container-type:inline-size;display:grid;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr) auto;align-items:center;padding:6px 8px;min-width:0;background:var(--board);border:1px solid var(--line);border-radius:12px}
+.bar .ages{grid-column:1}.bar .round{grid-column:3}.bar .turnline{grid-column:4}.bar .bar-btns{grid-column:5}
+.bar-btns{display:flex;align-items:center;gap:8px}
+.ages{display:flex;align-items:center;gap:4px}
+.lbl{font-family:var(--f-display);font-size:12px;letter-spacing:.08em;color:var(--muted);margin-right:4px}
+.age{min-width:38px;height:36px;padding:0 6px;border-radius:8px;border:1px solid var(--line);background:transparent;font-family:var(--f-display);font-size:17px}
+/* age track: past ages dimmed, current filled, only the next age can be tapped */
+.age.cur{background:var(--fg);color:var(--ink);border-color:var(--fg)}
+.age.done{color:var(--muted);border-color:transparent}
+.age.next{border-color:var(--muted);background:var(--board-2)}
+.age.cur:disabled,.age.done:disabled{opacity:1}
+.round{display:flex;align-items:baseline;gap:2px;white-space:nowrap;padding-inline:12px}
+.rnum{font-family:var(--f-num);font-weight:700;font-size:24px;font-variant-numeric:tabular-nums}
+.turnline{min-width:0;display:flex;justify-content:flex-end;align-items:center;padding-right:12px;font-weight:500}
+.tl-text{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.tl-text.toast{color:var(--fg);font-style:italic}
+@container (max-width:560px){.round .lbl{display:none}}
+@container (max-width:480px){.turnline{display:none}}
+@container (max-width:360px){.ages .lbl{display:none}}
+/* phones: smaller age buttons and round number so a two-digit round still fits */
+@media (max-width:440px){.bar{padding:6px 5px}.ages{gap:3px}.age{min-width:22px;padding:0 2px;font-size:14px}.bar .rnum{font-size:20px}.round{padding-inline:4px}.bar-btns{gap:5px}}
+
+.pb{--pc:#888;container:pb / size;position:relative;min-width:0;min-height:0;background:var(--board);border:1px solid var(--line);border-radius:14px;overflow:hidden;transition:box-shadow .25s,border-color .25s}
+.pb.active{border-color:var(--pc);box-shadow:0 0 0 2px var(--pc),0 0 30px color-mix(in srgb,var(--pc) 30%,transparent)}
+.pb-in{--btn:clamp(34px,min(14cqh,12.4cqw),64px);--g:calc(var(--btn)*.14);height:100%;display:flex;flex-direction:column;gap:var(--g);padding:calc(var(--btn)*.22);overflow:auto}
+.head{display:flex;align-items:center;gap:calc(var(--btn)*.22);min-height:calc(var(--btn)*.9);padding-inline:calc(var(--btn)*.08)}
+.sw{flex:none;width:calc(var(--btn)*.36);height:calc(var(--btn)*.36);border-radius:50%;background:var(--pc)}
+.who{flex:1;min-width:0;display:flex;align-items:baseline;gap:calc(var(--btn)*.2)}
+.nm{margin:0;font-family:var(--f-display);font-weight:400;font-size:calc(var(--btn)*.48);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.ord{flex:none;font-size:calc(var(--btn)*.24);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.endturn{flex:none;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:2px;height:calc(var(--btn)*.92);padding:0 calc(var(--btn)*.34);border:0;border-radius:calc(var(--btn)*.46);background:var(--pc);color:var(--ink);line-height:1}
+.et1{font-weight:600;font-size:calc(var(--btn)*.32)}
+.et2{font-family:var(--f-num);font-weight:600;font-size:calc(var(--btn)*.24);opacity:.78;white-space:nowrap}
+.endturn:active{transform:scale(.97)}
+
+.body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:var(--g);min-height:0}
+/* Every category: heading (with ▲/▼) on the left; − number + on the right, and for culture and science the rate row right under it in the same columns */
+.res{--rc:var(--fg);display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"lab ctl" ". rate";align-items:center;column-gap:calc(var(--btn)*.3);row-gap:calc(var(--btn)*.08);padding:calc(var(--btn)*.14) calc(var(--btn)*.2);border-radius:calc(var(--btn)*.2);background:color-mix(in srgb,var(--rc) 7%,var(--board))}
+.res.mil{grid-template-areas:"lab ctl"}
+.lab{grid-area:lab;align-self:center;display:flex;align-items:center;gap:calc(var(--btn)*.16);font-family:var(--f-display);font-size:calc(var(--btn)*.27);letter-spacing:.07em;color:var(--rc);white-space:nowrap}
+.ctl{grid-area:ctl;display:flex;align-items:center;gap:calc(var(--btn)*.2)}
+.total{min-width:3ch;text-align:center;font-family:var(--f-num);font-weight:700;font-size:calc(var(--btn)*.9);line-height:1;font-variant-numeric:tabular-nums;color:var(--fg);transform-origin:center}
+.total.bump{animation:bump .22s ease-out}
+@keyframes bump{40%{transform:scale(1.08);color:var(--rc)}}
+.rate{grid-area:rate;display:flex;align-items:center;justify-content:space-between;gap:calc(var(--btn)*.2)}
+.rb{flex:none;width:var(--btn);height:calc(var(--btn)*.66);border-radius:calc(var(--btn)*.14);border:1px solid color-mix(in srgb,var(--rc) 40%,transparent);background:transparent;font-family:var(--f-num);font-weight:600;font-size:calc(var(--btn)*.36);line-height:1;padding:0}
+.rb.up{background:color-mix(in srgb,var(--rc) 18%,var(--board))}
+.rv{display:flex;align-items:baseline;gap:calc(var(--btn)*.08);min-width:0;white-space:nowrap}
+.rv b{font-family:var(--f-num);font-weight:700;font-size:calc(var(--btn)*.42);font-variant-numeric:tabular-nums}
+.rv small{font-size:calc(var(--btn)*.22);color:var(--muted)}
+.mb{flex:none;width:var(--btn);height:var(--btn);border-radius:calc(var(--btn)*.18);border:1px solid color-mix(in srgb,var(--rc) 40%,transparent);background:transparent;font-family:var(--f-num);font-weight:600;font-size:calc(var(--btn)*.46);padding:0;line-height:1}
+.mb.up{background:color-mix(in srgb,var(--rc) 20%,var(--board));border-color:color-mix(in srgb,var(--rc) 55%,transparent)}
+.rb:active,.mb:active{transform:scale(.93);background:color-mix(in srgb,var(--rc) 40%,var(--board))}
+
+/* ▲/▼ beside the heading */
+.mk{flex:none;width:.9em;height:.8em;background:var(--fg)} /* em = the category heading's font size */
+.mk[data-m="hi"]{clip-path:polygon(50% 0,100% 100%,0 100%)}
+.mk[data-m="lo"]{background:var(--muted);clip-path:polygon(0 0,100% 0,50% 100%)}
+.mk:not([data-m="hi"]):not([data-m="lo"]){display:none}
+
+/* Narrow boards (four players on a phone): heading, then − number + across the full width, then the rate row */
+@container pb (max-width: 300px){
+  .pb-in{--btn:clamp(28px,min(19cqw,11cqh),50px);padding:calc(var(--btn)*.2)}
+  .ord,.et2{display:none}
+  .endturn{padding:0 calc(var(--btn)*.3)}
+  .res,.res.mil{grid-template-columns:minmax(0,1fr);grid-template-areas:"lab" "ctl" "rate"}
+  .res.mil{grid-template-areas:"lab" "ctl"}
+  .ctl{justify-content:space-between}
+}
+/* Very wide boards (two players on a landscape tablet): the three categories side by side, each stacked */
+@container pb (min-aspect-ratio: 2/1) and (min-width: 620px){
+  .pb-in{--btn:clamp(34px,min(20cqh,5.4cqw),66px)}
+  .body{flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:stretch;align-content:center}
+  .res,.res.mil{grid-template-columns:minmax(0,1fr);grid-template-areas:"lab" "ctl" "rate";align-content:center}
+  .res.mil{grid-template-areas:"lab" "ctl"}
+  .ctl{justify-content:space-between}
+}
+
+/* ---------- Graphs ---------- */
+/* graph mode replaces the boards and the middle bar; its own header carries the buttons, like the log */
+#board.graphs-on{grid-template-rows:minmax(0,1fr)}
+#board.graphs-on .row,#board.graphs-on .strip{display:none}
+.graphs{min-height:0;display:flex;flex-direction:column;background:var(--board);border:1px solid var(--line);border-radius:14px;transition:transform .3s}
+.graphs.flip{transform:rotate(180deg)}
+.charts{flex:1;min-height:0;padding:10px 16px 12px;display:grid;grid-template-rows:repeat(3,minmax(0,1fr));gap:10px}
+.chart{min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 180px;grid-template-rows:auto minmax(0,1fr);grid-template-areas:"title rank" "plot rank";gap:2px 16px}
+.c-title{grid-area:title;display:flex;align-items:baseline;gap:8px}
+.c-name{font-family:var(--f-display);font-size:15px;letter-spacing:.06em}
+.c-sub{font-size:12px;color:var(--muted)}
+.plot{grid-area:plot;position:relative;min-height:0}
+.plot svg{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;overflow:visible}
+.plot .grid{stroke:var(--grid);stroke-width:1}
+.plot .band{fill:var(--band)}
+.plot .tick{fill:var(--muted);font:500 11px var(--f-num)}
+.plot .agel{fill:var(--muted);font:12px var(--f-display);letter-spacing:.06em}
+.plot .ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.plot .dot{stroke:var(--board);stroke-width:2}
+.plot .xh{stroke:var(--muted);stroke-width:1}
+.rank,.tip ol{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;justify-content:center;gap:4px}
+.rank{grid-area:rank}
+.rank li,.tip li{display:grid;grid-template-columns:10px minmax(0,1fr) auto;align-items:center;gap:8px;font-size:14px}
+.sw2{width:10px;height:10px;border-radius:50%}
+.rn{overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.rank .v,.tip .v{font-family:var(--f-num);font-weight:600;font-size:17px;font-variant-numeric:tabular-nums}
+.tip{position:absolute;top:2px;z-index:2;min-width:160px;padding:8px 12px;border-radius:10px;background:var(--board-2);border:1px solid var(--line);box-shadow:0 8px 24px rgba(0,0,0,.45);pointer-events:none}
+.tip h4{margin:0 0 6px;font:600 12px var(--f-ui);color:var(--muted);white-space:nowrap}
+/* phones: no ranking lists beside the graphs; the lines get the full width (tapping still shows names and values) */
+@media (max-width:640px){
+  .chart{grid-template-columns:minmax(0,1fr);grid-template-areas:"title" "plot";grid-template-rows:auto minmax(0,1fr)}
+  .rank{display:none}
+}
+
+/* ---------- Log sheet ---------- */
+.drawer{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:16px;background:color-mix(in srgb,var(--bg) 70%,transparent);backdrop-filter:blur(3px)}
+.sheet{width:min(560px,100%);max-height:min(86vh,720px);display:flex;flex-direction:column;background:var(--board);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.5);transition:transform .3s}
+.sheet.flip{transform:rotate(180deg)}
+/* shared header for the log and the graphs: title and current round on the left, buttons on the right */
+.vhead{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.vtitle{flex:1;min-width:0;display:flex;align-items:baseline;gap:12px}
+.vtitle h2{margin:0;font-family:var(--f-display);font-weight:400;font-size:24px;white-space:nowrap}
+.vround{display:flex;align-items:baseline;white-space:nowrap}
+.vtools{display:flex;gap:8px}
+/* phones: the round goes under the title so the five buttons fit */
+@media (max-width:420px){.vhead{padding:10px 12px;gap:8px}.vtitle{flex-direction:column;align-items:flex-start;gap:0}.vtitle h2{font-size:20px;line-height:1.15}.vround .rnum{font-size:15px}.vtools{gap:5px}}
+/* the entries scroll; New game sits in a fixed footer underneath */
+.logscroll{flex:1;min-height:0;overflow:auto;padding-bottom:10px}
+.log-foot{flex:none;display:flex;padding:12px 18px;border-top:1px solid var(--line)}
+/* one button style for the whole app; icon-only buttons are square */
+.btn{flex:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 14px;border-radius:9px;border:1px solid var(--line);background:var(--board-2);font-weight:600}
+.btn.icon{width:40px;padding:0}
+.btn svg{width:20px;height:20px}
+.btn.primary{background:var(--fg);color:var(--ink);border-color:var(--fg)}
+.btn.danger{color:var(--military);border-color:color-mix(in srgb,var(--military) 45%,transparent);background:transparent}
+.btn.danger.armed{background:var(--military);color:var(--ink)}
+/* a disabled button always looks the same, whatever kind it is: a plain button, faded */
+.btn:disabled{background:var(--board-2);border-color:var(--line);color:var(--fg)}
+.loglist{list-style:none;margin:0;padding:6px 18px 0;display:flex;flex-direction:column}
+.loglist li{display:grid;grid-template-columns:44px 12px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 8px;border-bottom:1px solid var(--line);line-height:1.35}
+/* undo/redo history: undone entries dimmed on top, a divider, then the current entry highlighted */
+.loglist li.redo{opacity:.45}
+.loglist li.now{background:var(--board-2);border-radius:8px;border-bottom-color:transparent}
+.loglist .chip{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:var(--fg);color:var(--ink)}
+.loglist li.sep{display:flex;align-items:center;gap:10px;padding:8px;border-bottom:0;color:var(--muted);font-size:13px}
+.loglist li.sep::before,.loglist li.sep::after{content:"";flex:1;height:1px;background:var(--line)}
+.loglist li:last-child{border-bottom:0}
+.loglist .r{font-family:var(--f-num);font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums}
+.loglist .d{width:10px;height:10px;border-radius:50%;background:var(--pc,transparent)}
+.loglist li.sys{color:var(--muted)}
+.loglist li.sys .t{font-family:var(--f-display);letter-spacing:.05em}
+.loglist .to{color:var(--muted);font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.loglist .t b{font-weight:600}
+.empty{color:var(--muted);padding:18px 0}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <section id="setup" hidden>
+    <div class="setup-wrap">
+      <header class="setup-head">
+        <p class="eyebrow"><span>Culture</span><span>Science</span><span>Military</span></p>
+        <h1>Through the Ages Tracker</h1>
+        <p class="lede">Replaces the culture, science and military tracks on the board. Lay the tablet flat in the middle of the table, and each player's board faces their seat.</p>
+      </header>
+      <div class="setup-form">
+          <div class="field">
+            <span class="flabel">Players</span>
+            <div class="seg" id="countSeg" role="group" aria-label="Number of players">
+              <button type="button" data-n="2">2</button>
+              <button type="button" data-n="3">3</button>
+              <button type="button" data-n="4">4</button>
+            </div>
+          </div>
+          <ol class="plist" id="plist"></ol>
+          <p class="note">Turns go clockwise around the table, starting with the player marked First. The number on the left is each player's place in the turn order. In the seat picker, the bottom row is the near side: the edge of the table you are reading this from. Everyone starts with science rate 1 and military 1, in Age A, round 1.</p>
+          <button type="button" class="start" id="startBtn">Start game</button>
+      </div>
+    </div>
+  </section>
+
+  <main id="board" hidden>
+    <div class="row far" id="rowFar"></div>
+    <div class="strip" id="strip"></div>
+    <div class="row near" id="rowNear"></div>
+    <section class="graphs" id="graphs" hidden aria-label="Graphs">
+      <header class="vhead">
+        <div class="vtitle"><h2>Graphs</h2><span class="vround"><span class="lbl">Round</span><span class="rnum" data-round>1</span></span></div>
+        <div class="vtools">
+          <button type="button" class="btn icon" data-act="undo" aria-label="Undo" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+          <button type="button" class="btn icon" data-act="redo" aria-label="Redo" title="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+          <button type="button" class="btn icon" data-act="gturn" aria-label="Turn the graphs around" title="Turn around"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 21V10a5 5 0 0 1 10 0v9"/><path d="M13 15l4 4 4-4"/></svg></button>
+          <button type="button" class="btn icon" data-act="log" aria-label="Log" title="Log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/></svg></button>
+          <button type="button" class="btn icon" data-act="gclose" aria-label="Close graphs" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </header>
+      <div class="charts" id="charts"></div>
+    </section>
+  </main>
+
+  <div class="drawer" id="drawer" hidden>
+    <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+      <div class="vhead">
+        <div class="vtitle"><h2 id="logTitle">Log</h2><span class="vround"><span class="lbl">Round</span><span class="rnum" data-round>1</span></span></div>
+        <div class="vtools">
+          <button type="button" class="btn primary icon" data-act="undo" id="sheetUndo" aria-label="Undo" title="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+          <button type="button" class="btn icon" data-act="redo" id="sheetRedo" aria-label="Redo" title="Redo" disabled><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
+          <button type="button" class="btn icon" data-act="turn" aria-label="Turn around" title="Turn around"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 21V10a5 5 0 0 1 10 0v9"/><path d="M13 15l4 4 4-4"/></svg></button>
+          <button type="button" class="btn icon" data-act="graphs" id="gOpen" aria-label="Show graphs" title="Graphs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="M7.5 15l4-4.5 3 3L20 7"/></svg></button>
+          <button type="button" class="btn icon" data-act="close" aria-label="Close log" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+        </div>
+      </div>
+      <div class="logscroll" id="logscroll">
+        <ol class="loglist" id="loglist"></ol>
+      </div>
+      <div class="log-foot"><button type="button" class="btn danger" data-act="new" id="newBtn">New game</button></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const KEY = 'tta-tracker-v1';
+  const COLORS = [
+    { id: 'red',    hex: '#e2503f', name: 'Red' },
+    { id: 'blue',   hex: '#4590e0', name: 'Blue' },
+    { id: 'green',  hex: '#46a35b', name: 'Green' },
+    { id: 'yellow', hex: '#e5c445', name: 'Yellow' }
+  ];
+  // Seats: near/far side of the table, left/right as seen from the near side.
+  // Listed clockwise as seen from above: near-left → far-left → far-right → near-right.
+  const SEATS = ['nl', 'fl', 'fr', 'nr'];
+  const SEAT_NAME = { fl: 'Far side, left', fr: 'Far side, right', nl: 'Near side, left', nr: 'Near side, right' };
+  const AGES = ['A', 'I', 'II', 'III'];
+  const LABEL = { culture: 'culture', cultureRate: 'culture rate', science: 'science', scienceRate: 'science rate', military: 'military' };
+  const FIELDS = Object.keys(LABEL);
+  const MARKED = ['culture', 'science', 'military'];
+  const HIST_MAX = 400;
+
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const sgn = n => (n > 0 ? '+' : n < 0 ? '−' : '+') + Math.abs(n);
+  const hexOf = id => (COLORS.find(c => c.id === id) || { hex: '#9aa0a8' }).hex;
+  const ordinal = n => n + (['th', 'st', 'nd', 'rd'][n] || 'th');
+  const isRate = f => f.endsWith('Rate');
+
+  // Which players sit on each side, in screen order left to right (as seen from the near side).
+  function rows(players) {
+    const pos = { fl: 0, fr: 1, nl: 0, nr: 1 };
+    const all = players.map((p, i) => ({ i, s: SEATS.includes(p.seat) ? p.seat : SEATS[i] }));
+    const side = c => all.filter(x => x.s[0] === c).sort((a, b) => pos[a.s] - pos[b.s]).map(x => x.i);
+    return { far: side('f'), near: side('n') };
+  }
+
+  function defaultDraft() {
+    return { n: 4, first: 0, players: COLORS.map((c, i) => ({ name: '', color: c.id, seat: SEATS[i] })) };
+  }
+  // Turn order goes clockwise from the seats, starting with the player chosen to go first.
+  // Returns setup slot numbers in playing order.
+  function turnOrder(d) {
+    const ids = d.players.slice(0, d.n).map((_, i) => i)
+      .sort((a, b) => SEATS.indexOf(d.players[a].seat) - SEATS.indexOf(d.players[b].seat));
+    const k = ids.indexOf(firstOf(d));
+    return ids.slice(k).concat(ids.slice(0, k));
+  }
+  const firstOf = d => (Number.isInteger(d.first) && d.first >= 0 && d.first < d.n ? d.first : 0);
+  // Keep four player slots with unique, valid colours and seats; earlier slots win.
+  function normalize(d) {
+    if (!d || !Array.isArray(d.players)) return defaultDraft();
+    const out = { n: [2, 3, 4].includes(d.n) ? d.n : 4, first: Number.isInteger(d.first) ? d.first : 0, players: [] };
+    const usedC = new Set(), usedS = new Set();
+    for (let i = 0; i < 4; i++) {
+      const p = d.players[i] || {};
+      const q = { name: typeof p.name === 'string' ? p.name : '', color: null, seat: null };
+      if (COLORS.some(c => c.id === p.color) && !usedC.has(p.color)) { q.color = p.color; usedC.add(p.color); }
+      if (SEATS.includes(p.seat) && !usedS.has(p.seat)) { q.seat = p.seat; usedS.add(p.seat); }
+      out.players.push(q);
+    }
+    out.players.forEach(q => {
+      if (!q.color) { q.color = COLORS.map(c => c.id).find(c => !usedC.has(c)); usedC.add(q.color); }
+      if (!q.seat) { q.seat = SEATS.find(s => !usedS.has(s)); usedS.add(q.seat); }
+    });
+    return out;
+  }
+
+  /* ---------- Storage ---------- */
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return null;
+      const s = JSON.parse(raw);
+      if (!s || !Array.isArray(s.players) || s.players.length < 2) return null;
+      s.log = s.log || []; s.hist = s.hist || []; s.redo = Array.isArray(s.redo) ? s.redo : [];
+      if (!Array.isArray(s.series) || !s.series.length) {
+        // games from before graphs existed: start tracking from the current moment
+        s.series = [{ x: (s.round - 1) + s.active / s.players.length, r: s.round, pid: null, v: s.players.map(p => [p.culture, p.scienceRate, p.military]) }];
+      }
+      if (!Array.isArray(s.ageMarks) || !s.ageMarks.length) s.ageMarks = [{ x: 0, a: s.age || 0 }];
+      return s;
+    } catch (e) { return null; }
+  }
+  function save() {
+    try { if (S) localStorage.setItem(KEY, JSON.stringify(S)); else localStorage.removeItem(KEY); } catch (e) {}
+  }
+  function loadDraft() {
+    try { return normalize(JSON.parse(localStorage.getItem(KEY + '-draft'))); } catch (e) { return defaultDraft(); }
+  }
+  function saveDraft() { try { localStorage.setItem(KEY + '-draft', JSON.stringify(draft)); } catch (e) {} }
+
+  let S = load();
+  let draft = loadDraft();
+
+  /* ---------- Setup ---------- */
+  const plist = $('#plist'), countSeg = $('#countSeg');
+
+  function renderSetup() {
+    countSeg.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.n === draft.n)));
+    const seatBtn = (p, i) => s => {
+      const o = draft.players.findIndex((q, j) => j < draft.n && j !== i && q.seat === s);
+      const who = o >= 0 ? ` (now ${esc(draft.players[o].name.trim() || 'Player ' + (o + 1))})` : '';
+      return `<button type="button" class="sp${o >= 0 ? ' taken' : ''}" role="radio" aria-checked="${p.seat === s}" aria-label="${SEAT_NAME[s]}${who}" title="${SEAT_NAME[s]}" data-s="${s}"${o >= 0 ? ` style="--oc:${hexOf(draft.players[o].color)}"` : ''}></button>`;
+    };
+    const order = turnOrder(draft), first = firstOf(draft);
+    plist.innerHTML = draft.players.slice(0, draft.n).map((p, i) => `
+      <li class="prow" style="--pc:${hexOf(p.color)}" data-i="${i}">
+        <span class="pnum" title="Place in the turn order">${order.indexOf(i) + 1}</span>
+        <input class="pin" id="pname-${i}" maxlength="16" autocomplete="off" placeholder="Player ${i + 1}" value="${esc(p.name)}" aria-label="Name of player ${i + 1}">
+        <div class="swatches" role="radiogroup" aria-label="Colour of player ${i + 1}">
+          ${COLORS.map(c => `<button type="button" class="swb" role="radio" aria-checked="${c.id === p.color}" aria-label="${c.name}" data-c="${c.id}" style="--sw:${c.hex}"></button>`).join('')}
+        </div>
+        <div class="seatcol">
+          <span class="slbl">Seat</span>
+          <div class="seatpick" role="radiogroup" aria-label="Seat of player ${i + 1}">
+            ${['fl', 'fr'].map(seatBtn(p, i)).join('')}<span class="mt" aria-hidden="true"></span>${['nl', 'nr'].map(seatBtn(p, i)).join('')}
+          </div>
+        </div>
+        <div class="mv">
+          <button type="button" class="firstb" role="radio" aria-checked="${first === i}" data-first="${i}" aria-label="${esc(p.name.trim() || 'Player ' + (i + 1))} goes first">First</button>
+        </div>
+      </li>`).join('');
+  }
+  countSeg.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    draft.n = +b.dataset.n; saveDraft(); renderSetup();
+  });
+  plist.addEventListener('input', e => {
+    const row = e.target.closest('.prow'); if (!row) return;
+    draft.players[+row.dataset.i].name = e.target.value; saveDraft();
+  });
+  plist.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const i = +b.closest('.prow').dataset.i;
+    if (b.dataset.c) {
+      const other = draft.players.findIndex((p, j) => j !== i && p.color === b.dataset.c);
+      if (other >= 0) draft.players[other].color = draft.players[i].color; // swap so colours stay unique
+      draft.players[i].color = b.dataset.c;
+    } else if (b.dataset.s) {
+      const other = draft.players.findIndex((p, j) => j !== i && p.seat === b.dataset.s);
+      if (other >= 0) draft.players[other].seat = draft.players[i].seat; // swap seats
+      draft.players[i].seat = b.dataset.s;
+    } else if (b.dataset.first) {
+      draft.first = +b.dataset.first;
+    } else return;
+    saveDraft(); renderSetup();
+  });
+  $('#startBtn').addEventListener('click', () => {
+    const now = Date.now();
+    S = {
+      v: 1, active: 0, round: 1, age: 0, hist: [], graphs: false,
+      players: turnOrder(draft).map(i => draft.players[i]).map(p => ({
+        name: p.name.trim() || 'Player ' + (draft.players.indexOf(p) + 1), color: p.color, seat: p.seat,
+        culture: 0, cultureRate: 0, science: 0, scienceRate: 1, military: 1
+      })),
+      log: [{ k: 'start', r: 1, t: now }], redo: [],
+      ageMarks: [{ x: 0, a: 0 }]
+    };
+    S.series = [{ x: 0, r: 1, pid: null, v: S.players.map(p => [p.culture, p.scienceRate, p.military]) }];
+    save(); showBoard();
+  });
+
+  /* ---------- Board ---------- */
+  const board = $('#board'), rowFar = $('#rowFar'), rowNear = $('#rowNear'), strip = $('#strip');
+  let P = []; // per-player element refs
+
+  function resBlock(key, label) {
+    const rate = key + 'Rate';
+    return `
+      <section class="res" style="--rc:var(--${key})">
+        <div class="lab"><span>${label}</span><span class="mk" data-mk="${key}"></span></div>
+        <div class="ctl">
+          <button type="button" class="mb" data-f="${key}" data-d="-1" aria-label="Remove 1 ${label}">−</button>
+          <output class="total" data-v="${key}"></output>
+          <button type="button" class="mb up" data-f="${key}" data-d="1" aria-label="Add 1 ${label}">+</button>
+        </div>
+        <div class="rate">
+          <button type="button" class="rb" data-f="${rate}" data-d="-1" aria-label="Lower ${label} rate">−</button>
+          <span class="rv"><b data-v="${rate}"></b><small>/turn</small></span>
+          <button type="button" class="rb up" data-f="${rate}" data-d="1" aria-label="Raise ${label} rate">+</button>
+        </div>
+      </section>`;
+  }
+  function panel(i) {
+    const p = S.players[i];
+    return `
+      <article class="pb" data-pid="${i}" style="--pc:${hexOf(p.color)}" aria-label="${esc(p.name)}">
+        <div class="pb-in">
+          <header class="head">
+            <span class="sw"></span>
+            <div class="who"><h2 class="nm">${esc(p.name)}</h2><span class="ord">${ordinal(i + 1)}</span></div>
+            <button type="button" class="endturn" data-act="end" hidden><span class="et1">End turn</span><span class="et2"></span></button>
+          </header>
+          <div class="body">
+            ${resBlock('culture', 'Culture')}
+            ${resBlock('science', 'Science')}
+            <section class="res mil" style="--rc:var(--military)">
+              <div class="lab"><span>Military</span><span class="mk" data-mk="military"></span></div>
+              <div class="ctl">
+                <button type="button" class="mb" data-f="military" data-d="-1" aria-label="Lower military">−</button>
+                <output class="total" data-v="military"></output>
+                <button type="button" class="mb up" data-f="military" data-d="1" aria-label="Raise military">+</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </article>`;
+  }
+  const undoIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>';
+  const chartIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4v16h16"/><path d="M7.5 15l4-4.5 3 3L20 7"/></svg>';
+  const redoIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg>';
+  function bar() {
+    return `
+      <div class="bar">
+        <div class="ages" role="group" aria-label="Age"><span class="lbl">Age</span>
+          ${AGES.map((a, i) => `<button type="button" class="age" data-age="${i}">${a}</button>`).join('')}
+        </div>
+        <div class="round"><span class="lbl">Round</span><span class="rnum">1</span></div>
+        <div class="turnline" aria-live="polite"><span class="tl-text"></span></div>
+        <div class="bar-btns">
+        <button type="button" class="btn icon" data-act="undo" aria-label="Undo" title="Undo">${undoIcon}</button>
+        <button type="button" class="btn icon" data-act="redo" aria-label="Redo" title="Redo" disabled>${redoIcon}</button>
+        <button type="button" class="btn icon" data-act="log" aria-label="Log" title="Log"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4.5 6h.01M4.5 12h.01M4.5 18h.01" stroke-width="3"/></svg></button>
+        <button type="button" class="btn icon" data-act="gopen" aria-label="Show graphs" title="Graphs">${chartIcon}</button>
+        </div>
+      </div>`;
+  }
+
+  function buildBoard() {
+    const st = rows(S.players);
+    rowFar.innerHTML = st.far.map(panel).join('');
+    rowNear.innerHTML = st.near.map(panel).join('');
+    rowFar.hidden = !st.far.length;
+    rowNear.hidden = !st.near.length;
+    board.classList.toggle('no-far', !st.far.length);
+    board.classList.toggle('no-near', !st.near.length);
+    strip.innerHTML = bar();
+    P = S.players.map((_, i) => {
+      const el = board.querySelector(`.pb[data-pid="${i}"]`);
+      const v = {}, mk = {};
+      const minus = {};
+      FIELDS.forEach(f => {
+        v[f] = el.querySelector(`[data-v="${f}"]`); mk[f] = el.querySelector(`[data-mk="${f}"]`);
+        minus[f] = el.querySelector(`[data-f="${f}"][data-d="-1"]`);
+      });
+      return { el, v, mk, minus, end: el.querySelector('.endturn'), et2: el.querySelector('.et2') };
+    });
+  }
+
+  function render() {
+    if (!S) return;
+    // marks: exactly one highest and one lowest per category.
+    // Ties: highest goes to the tied player closest after the current player in turn order
+    // (the current player first), lowest to the tied player farthest from them.
+    const n = S.players.length, dist = i => (i - S.active + n) % n;
+    const marks = {};
+    MARKED.forEach(f => {
+      let hi = S.active, lo = S.active;
+      S.players.forEach((p, i) => {
+        const v = p[f], h = S.players[hi][f], l = S.players[lo][f];
+        if (v > h || (v === h && dist(i) < dist(hi))) hi = i;
+        if (v < l || (v === l && dist(i) > dist(lo))) lo = i;
+      });
+      marks[f] = S.players.map((_, i) => (i === hi ? 'hi' : i === lo ? 'lo' : ''));
+    });
+    S.players.forEach((p, i) => {
+      const r = P[i];
+      FIELDS.forEach(f => {
+        const txt = String(p[f]);
+        if (r.v[f].textContent !== txt) {
+          const was = r.v[f].textContent;
+          r.v[f].textContent = txt;
+          if (was !== '' && !isRate(f)) { r.v[f].classList.remove('bump'); void r.v[f].offsetWidth; r.v[f].classList.add('bump'); }
+        }
+        if (r.minus[f]) r.minus[f].disabled = p[f] <= 0; // nothing to take away at 0
+        if (!marks[f]) return;
+        const m = marks[f][i], el = r.mk[f];
+        el.dataset.m = m;
+        el.title = m === 'hi' ? 'Highest ' + LABEL[f] : m === 'lo' ? 'Lowest ' + LABEL[f] : '';
+        if (m) { el.setAttribute('role', 'img'); el.setAttribute('aria-label', el.title); } else { el.removeAttribute('role'); el.removeAttribute('aria-label'); }
+      });
+      const act = i === S.active;
+      r.el.classList.toggle('active', act);
+      r.end.hidden = !act;
+      if (act) r.et2.textContent = `${sgn(p.cultureRate)} culture · ${sgn(p.scienceRate)} science`;
+    });
+    strip.querySelectorAll('.bar').forEach(h => {
+      h.querySelectorAll('.age').forEach(b => {
+        const a = +b.dataset.age;
+        b.classList.toggle('done', a < S.age);
+        b.classList.toggle('cur', a === S.age);
+        b.classList.toggle('next', a === S.age + 1);
+        b.disabled = a !== S.age + 1;
+        if (a === S.age) b.setAttribute('aria-current', 'step'); else b.removeAttribute('aria-current');
+        b.setAttribute('aria-label', a === S.age + 1 ? `Start Age ${AGES[a]}` : `Age ${AGES[a]}`);
+        b.title = a === S.age + 1 ? `Start Age ${AGES[a]}` : '';
+      });
+      h.querySelector('.rnum').textContent = S.round;
+      const t = h.querySelector('.tl-text');
+      if (!toastOn) { t.textContent = ''; t.classList.remove('toast'); } // only undo/redo messages show here
+    });
+    document.querySelectorAll('[data-act="undo"]').forEach(b => { b.disabled = !S.hist.length; });
+    document.querySelectorAll('[data-act="redo"]').forEach(b => { b.disabled = !S.redo.length; });
+    document.querySelectorAll('[data-round]').forEach(e => { e.textContent = S.round; });
+    if (!drawer.hidden) renderLog();
+    if (S.graphs) drawCharts();
+  }
+
+  let toastOn = false, toastTimer = 0;
+  function toast(msg) {
+    toastOn = true;
+    strip.querySelectorAll('.tl-text').forEach(t => { t.textContent = msg; t.classList.add('toast'); });
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toastOn = false; render(); }, 2600);
+  }
+
+  /* ---------- Actions ---------- */
+  function snapshot() {
+    S.hist.push(JSON.stringify({ players: S.players, active: S.active, round: S.round, age: S.age, logLen: S.log.length, sLen: S.series.length, aLen: S.ageMarks.length }));
+    if (S.hist.length > HIST_MAX) S.hist.shift();
+  }
+  // x position on the graphs: rounds, with each player's turn a slice of the round
+  const turnX = k => (S.round - 1) + k / S.players.length;
+  const nowX = () => turnX(S.active + 0.5);
+  const current = () => S.players.map(p => [p.culture, p.scienceRate, p.military]);
+  function change(pid, f, d) {
+    const p = S.players[pid];
+    const before = p[f];
+    const after = Math.max(0, before + d); // no value can go below 0, per-turn rates included
+    if (after === before) return;
+    S.redo.length = 0; // a new action replaces anything that could have been redone
+    const now = Date.now();
+    const last = S.log[S.log.length - 1];
+    let topLen = -1;
+    try { topLen = S.hist.length ? JSON.parse(S.hist[S.hist.length - 1]).logLen : -1; } catch (e) {}
+    if (last && last.k === 'chg' && last.pid === pid && last.f === f && topLen === S.log.length - 1) {
+      // consecutive changes to the same value (nothing else logged in between, undone actions don't count)
+      // become one log entry and one undo step
+      last.d += after - before; last.to = after; last.t = now;
+      p[f] = after;
+      if (last.d === 0) { S.hist.pop(); S.log.pop(); }
+    } else {
+      snapshot();
+      p[f] = after;
+      S.log.push({ k: 'chg', pid, f, d: after - before, to: after, r: S.round, t: now });
+    }
+    save(); render();
+  }
+  function endTurn() {
+    const i = S.active, p = S.players[i], now = Date.now();
+    S.redo.length = 0;
+    snapshot();
+    const c = p.cultureRate, s = p.scienceRate;
+    p.culture = Math.max(0, p.culture + c);
+    p.science = Math.max(0, p.science + s);
+    S.log.push({ k: 'end', pid: i, c, s, r: S.round, t: now });
+    S.series.push({ x: turnX(i + 1), r: S.round, pid: i, v: current() });
+    S.active = (i + 1) % S.players.length;
+    if (S.active === 0) { S.round += 1; S.log.push({ k: 'round', r: S.round, t: now }); }
+    save(); render();
+  }
+  function setAge(a) {
+    if (a !== S.age + 1 || a >= AGES.length) return; // only one step forward; Undo goes back
+    S.redo.length = 0;
+    snapshot();
+    S.age = a;
+    S.ageMarks.push({ x: turnX(S.active), a });
+    S.log.push({ k: 'age', a, r: S.round, t: Date.now() });
+    save(); render();
+  }
+  function undo() {
+    if (!S.hist.length) return;
+    const snap = JSON.parse(S.hist.pop());
+    const gone = S.log[snap.logLen];
+    // keep what is being undone so Redo can put it back
+    S.redo.push(JSON.parse(JSON.stringify({
+      st: { players: S.players, active: S.active, round: S.round, age: S.age },
+      log: S.log.slice(snap.logLen),
+      series: snap.sLen != null ? S.series.slice(snap.sLen) : [],
+      ages: snap.aLen != null ? S.ageMarks.slice(snap.aLen) : []
+    })));
+    S.players = snap.players; S.active = snap.active; S.round = snap.round; S.age = snap.age;
+    S.log.length = Math.min(S.log.length, snap.logLen);
+    if (snap.sLen != null) S.series.length = Math.min(S.series.length, snap.sLen);
+    if (snap.aLen != null) S.ageMarks.length = Math.min(S.ageMarks.length, snap.aLen);
+    save();
+    toast(gone ? 'Undone: ' + plain(gone) : 'Undone');
+    render();
+  }
+  function redo() {
+    if (!S.redo.length) return;
+    const r = S.redo.pop();
+    snapshot();
+    S.players = r.st.players; S.active = r.st.active; S.round = r.st.round; S.age = r.st.age;
+    S.log.push(...r.log); S.series.push(...r.series); S.ageMarks.push(...r.ages);
+    save();
+    toast(r.log[0] ? 'Redone: ' + plain(r.log[0]) : 'Redone');
+    render();
+  }
+
+  board.addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
+    const pb = b.closest('.pb');
+    if (b.dataset.f && pb) return change(+pb.dataset.pid, b.dataset.f, +b.dataset.d);
+    if (b.dataset.act === 'end') return endTurn();
+    if (b.dataset.age) return setAge(+b.dataset.age);
+    if (b.dataset.act === 'undo') return undo();
+    if (b.dataset.act === 'redo') return redo();
+    if (b.dataset.act === 'log') return openDrawer();
+    if (b.dataset.act === 'gturn') return toggleTurn();
+    if (b.dataset.act === 'gclose') { S.graphs = false; save(); return applyView(); }
+    if (b.dataset.act === 'gopen') { S.graphs = true; save(); return applyView(); }
+  });
+
+  /* ---------- Graphs ---------- */
+  const graphsEl = $('#graphs'), chartsEl = $('#charts');
+  const METRICS = [
+    { title: 'Culture', sub: 'total', tok: '--culture', fmt: v => String(v) },
+    { title: 'Science', sub: 'rate per turn', tok: '--science', fmt: v => String(v) },
+    { title: 'Military', sub: '', tok: '--military', fmt: v => String(v) }
+  ];
+  function applyView() {
+    board.classList.toggle('graphs-on', !!S.graphs);
+    graphsEl.hidden = !S.graphs;
+    if (!S.graphs) resetTurn(); // back on the boards: log and graphs face the near side again
+    if (S.graphs) drawCharts();
+  }
+  // One "turned around" flag shared by the log and the graphs. Switching between them keeps it;
+  // returning to the boards clears it. Not saved: it only matters while someone is looking.
+  let turned = false;
+  function applyTurn() { sheet.classList.toggle('flip', turned); graphsEl.classList.toggle('flip', turned); }
+  function toggleTurn() { turned = !turned; applyTurn(); }
+  function resetTurn() { turned = false; applyTurn(); }
+  // every recorded end of turn, plus the live values now
+  function points() {
+    return S.series.concat([{ x: nowX(), r: S.round, pid: S.active, now: true, v: current() }]);
+  }
+  function ticks(lo, hi) {
+    if (hi <= lo) hi = lo + 1;
+    const raw = (hi - lo) / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+    const step = Math.max(1, [1, 2, 5, 10].map(m => m * mag).find(s => s >= raw));
+    const out = [];
+    for (let t = Math.floor(lo / step) * step; t <= Math.ceil(hi / step) * step + 1e-9; t += step) out.push(t);
+    return out;
+  }
+  const rankRows = (vals, mi) => S.players.map((p, i) => ({ p, v: vals[i] })).sort((a, b) => b.v - a.v)
+    .map(o => `<li><span class="sw2" style="background:${hexOf(o.p.color)}"></span><span class="rn">${esc(o.p.name)}</span><span class="v">${METRICS[mi].fmt(o.v)}</span></li>`).join('');
+
+  function drawCharts() {
+    if (!S || !S.graphs) return;
+    const pts = points(), cur = current();
+    const xMax = Math.max(3, Math.ceil(pts[pts.length - 1].x));
+    chartsEl.innerHTML = METRICS.map((m, mi) => `
+      <div class="chart">
+        <div class="c-title"><span class="c-name" style="color:var(${m.tok})">${m.title}</span><span class="c-sub">${m.sub}</span></div>
+        <div class="plot" data-m="${mi}"><svg role="img" aria-label="${m.title} ${m.sub} for each player, by round"></svg><div class="tip" hidden></div></div>
+        <ol class="rank" aria-label="${m.title} now">${rankRows(cur.map(r => r[mi]), mi)}</ol>
+      </div>`).join('');
+    chartsEl.querySelectorAll('.plot').forEach(pl => drawPlot(pl, +pl.dataset.m, pts, xMax));
+  }
+  function drawPlot(plot, mi, pts, xMax) {
+    const W = plot.clientWidth, H = plot.clientHeight;
+    if (W < 60 || H < 40) return;
+    const n = S.players.length, last = mi === METRICS.length - 1;
+    const ml = 36, mr = 10, mt = 4, mb = last ? 22 : 4;
+    const vals = pts.flatMap(q => q.v.map(r => r[mi]));
+    const tk = ticks(Math.min(0, ...vals), Math.max(mi === 0 ? 10 : 3, ...vals));
+    const y0 = tk[0], y1 = tk[tk.length - 1];
+    const X = x => ml + x / xMax * (W - ml - mr);
+    const Y = y => mt + (1 - (y - y0) / (y1 - y0)) * (H - mt - mb);
+    let s = '';
+    // age bands behind everything
+    S.ageMarks.forEach((a, k) => {
+      const x0 = X(a.x), x1 = X(k + 1 < S.ageMarks.length ? S.ageMarks[k + 1].x : xMax);
+      if (a.a % 2 === 1) s += `<rect class="band" x="${x0}" y="${mt}" width="${Math.max(0, x1 - x0)}" height="${H - mt - mb}"/>`;
+      if (mi === 0 && x1 - x0 > 50) s += `<text class="agel" x="${x0 + 6}" y="${mt + 13}">Age ${AGES[a.a]}</text>`;
+    });
+    tk.forEach(t => {
+      s += `<line class="grid" x1="${ml}" x2="${W - mr}" y1="${Y(t)}" y2="${Y(t)}"/>`;
+      s += `<text class="tick" x="${ml - 6}" y="${Y(t) + 4}" text-anchor="end">${t}</text>`;
+    });
+    if (last) {
+      const per = (W - ml - mr) / xMax, step = Math.max(1, Math.ceil(24 / per));
+      s += `<text class="tick" x="${ml - 6}" y="${H - 6}" text-anchor="end">Round</text>`;
+      for (let r = 1; r <= xMax; r += step) s += `<text class="tick" x="${X(r - 0.5)}" y="${H - 6}" text-anchor="middle">${r}</text>`;
+    }
+    // lines; a small vertical offset keeps equal values from hiding each other
+    const off = i => (i - (n - 1) / 2) * 1.5;
+    S.players.forEach((p, i) => {
+      const d = pts.map((q, k) => `${k ? 'L' : 'M'}${X(q.x).toFixed(1)},${(Y(q.v[i][mi]) + off(i)).toFixed(1)}`).join('');
+      s += `<path class="ln" d="${d}" stroke="${hexOf(p.color)}"/>`;
+    });
+    const end = pts[pts.length - 1];
+    S.players.forEach((p, i) => { s += `<circle class="dot" cx="${X(end.x)}" cy="${Y(end.v[i][mi]) + off(i)}" r="4.5" fill="${hexOf(p.color)}"/>`; });
+    s += `<line class="xh" x1="0" x2="0" y1="${mt}" y2="${H - mb}" visibility="hidden"/>`;
+    const svg = plot.querySelector('svg');
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = s;
+    plot._geo = { X, W };
+  }
+  function hoverAt(e) {
+    const plot = e.target.closest && e.target.closest('.plot');
+    if (!plot || !plot._geo) return clearHover();
+    const r = plot.getBoundingClientRect();
+    const px = graphsEl.classList.contains('flip') ? r.right - e.clientX : e.clientX - r.left;
+    const pts = points();
+    let k = 0, bd = Infinity;
+    pts.forEach((q, j) => { const d = Math.abs(plot._geo.X(q.x) - px); if (d < bd) { bd = d; k = j; } });
+    const q = pts[k], mi = +plot.dataset.m;
+    chartsEl.querySelectorAll('.plot').forEach(pl => {
+      if (!pl._geo) return;
+      const x = pl._geo.X(q.x), xh = pl.querySelector('.xh');
+      xh.setAttribute('x1', x); xh.setAttribute('x2', x); xh.setAttribute('visibility', 'visible');
+      pl.querySelector('.tip').hidden = pl !== plot;
+    });
+    const head = q.now ? `Now · ${S.players[S.active].name}'s turn`
+      : q.pid == null ? (q.x === 0 ? 'Game start' : `Round ${q.r} · graphs started`)
+      : `Round ${q.r} · after ${S.players[q.pid].name}'s turn`;
+    const tip = plot.querySelector('.tip'), x = plot._geo.X(q.x);
+    tip.innerHTML = `<h4>${esc(head)}</h4><ol>${rankRows(q.v.map(r => r[mi]), mi)}</ol>`;
+    tip.style.left = x > plot._geo.W / 2 ? '' : (x + 12) + 'px';
+    tip.style.right = x > plot._geo.W / 2 ? (plot._geo.W - x + 12) + 'px' : '';
+  }
+  function clearHover() {
+    chartsEl.querySelectorAll('.xh').forEach(l => l.setAttribute('visibility', 'hidden'));
+    chartsEl.querySelectorAll('.tip').forEach(t => { t.hidden = true; });
+  }
+  chartsEl.addEventListener('pointermove', hoverAt);
+  chartsEl.addEventListener('pointerdown', hoverAt);
+  chartsEl.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') clearHover(); });
+  try {
+    let raf = 0;
+    new ResizeObserver(() => { cancelAnimationFrame(raf); raf = requestAnimationFrame(drawCharts); }).observe(chartsEl);
+  } catch (e) { window.addEventListener('resize', drawCharts); }
+
+  /* ---------- Log ---------- */
+  const drawer = $('#drawer'), sheet = $('#sheet'), loglist = $('#loglist'), newBtn = $('#newBtn');
+  function entryHTML(e) {
+    const p = e.pid != null ? S.players[e.pid] : null;
+    const nm = p ? `<b>${esc(p.name)}</b>` : '';
+    switch (e.k) {
+      case 'start': return 'Game started';
+      case 'chg': return `${nm} ${LABEL[e.f]} ${sgn(e.d)} <span class="to">→ ${e.to}</span>`;
+      case 'end': return `${nm} ended turn: ${sgn(e.c)} culture, ${sgn(e.s)} science`;
+      case 'round': return `Round ${e.r} begins`;
+      case 'age': return `Age ${AGES[e.a]} begins`;
+    }
+    return '';
+  }
+  function plain(e) { const d = document.createElement('div'); d.innerHTML = entryHTML(e); return d.textContent.replace(/\s+/g, ' ').trim(); }
+  function renderLog() {
+    if (!S.log.length && !S.redo.length) { loglist.innerHTML = '<li class="empty">Nothing yet.</li>'; return; }
+    const row = (e, cls) => {
+      const p = e.pid != null ? S.players[e.pid] : null;
+      const c = [p ? '' : 'sys', cls].filter(Boolean).join(' ');
+      return `<li class="${c}" ${p ? `style="--pc:${hexOf(p.color)}"` : ''}>
+        <span class="r">R${e.r}</span><span class="d"></span><span class="t">${entryHTML(e)}</span>${cls === 'now' ? '<span class="chip">Now</span>' : ''}</li>`;
+    };
+    // newest first: the last thing undone sits at the very top, the next thing Redo restores sits just above "Now"
+    const undone = S.redo.flatMap(r => r.log.slice().reverse());
+    const live = S.log.slice().reverse();
+    loglist.innerHTML =
+      undone.map(e => row(e, 'redo')).join('') +
+      (undone.length ? '<li class="sep">↑ Undone. Redo restores them one step at a time.</li>' : '') +
+      live.map((e, k) => row(e, k === 0 ? 'now' : '')).join('');
+  }
+  let armTimer = 0;
+  function disarm() { clearTimeout(armTimer); newBtn.classList.remove('armed'); newBtn.textContent = 'New game'; }
+  function openDrawer() {
+    applyTurn();
+    disarm(); renderLog();
+    drawer.hidden = false;
+    $('#sheetUndo').disabled = !S.hist.length;
+    $('#sheetRedo').disabled = !S.redo.length;
+    $('#logscroll').scrollTop = 0;
+    const nowRow = loglist.querySelector('.now');
+    if (nowRow && S.redo.length) nowRow.scrollIntoView({ block: 'nearest' });
+    sheet.querySelector('[data-act="close"]').focus({ preventScroll: true });
+  }
+  function closeDrawer() {
+    drawer.hidden = true; disarm();
+    if (!S || !S.graphs) resetTurn(); // closing the log onto the boards clears the flag; onto the graphs it stays
+  }
+  drawer.addEventListener('click', e => {
+    if (e.target === drawer) return closeDrawer();
+    const b = e.target.closest('button'); if (!b || b.disabled) return;
+    const a = b.dataset.act;
+    if (a === 'close') closeDrawer();
+    else if (a === 'undo') undo();
+    else if (a === 'redo') redo();
+    else if (a === 'turn') toggleTurn();
+    else if (a === 'graphs') { S.graphs = true; save(); closeDrawer(); applyView(); }
+    else if (a === 'new') {
+      if (!newBtn.classList.contains('armed')) {
+        newBtn.classList.add('armed'); newBtn.textContent = 'Tap again to end this game';
+        armTimer = setTimeout(disarm, 3500);
+      } else {
+        // carry the current players into the setup screen
+        const carried = S.players.map(p => ({ name: p.name, color: p.color, seat: p.seat }));
+        draft = normalize({ n: S.players.length, first: 0, players: carried.concat(draft.players.slice(carried.length)) }); // last game's first player goes first again
+        saveDraft();
+        S = null; save(); closeDrawer(); showSetup();
+      }
+    }
+  });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !drawer.hidden) closeDrawer(); });
+
+  /* ---------- Screens ---------- */
+  function showSetup() { $('#board').hidden = true; $('#setup').hidden = false; renderSetup(); }
+  function showBoard() { $('#setup').hidden = true; $('#board').hidden = false; buildBoard(); applyView(); render(); }
+
+  if (S) showBoard(); else showSetup();
+})();
+</script>
+</body>
+</html>
